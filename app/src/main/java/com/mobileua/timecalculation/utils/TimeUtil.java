@@ -60,6 +60,6 @@ public class TimeUtil {
     }
 
     private long getCurrentSystemTime(){
-        return TimeUnit.NANOSECONDS.toMillis( System.nanoTime());
+        return SystemClock.elapsedRealtime();
     }
 }
