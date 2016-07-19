@@ -1,10 +1,12 @@
 package com.mobileua.timecalculation.activity;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.location.Location;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import android.os.PersistableBundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -12,23 +14,22 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.drive.Drive;
 import com.google.android.gms.location.LocationServices;
 import com.mobileua.timecalculation.R;
 import com.mobileua.timecalculation.utils.TimeUtil;
 
-import java.util.Date;
+public class MainActivity extends Activity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
 
-public class MainActivity extends Activity implements GoogleApiClient.OnConnectionFailedListener,GoogleApiClient.ConnectionCallbacks{
+    private GoogleApiClient googleApiClient = null;
+    private ProgressDialog progressDialog;
 
-    private GoogleApiClient googleApiClient=null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Button button = (Button) findViewById(R.id.button);
-        final TextView textView=(TextView)findViewById(R.id.textView);
-        final  TextView textArea=(TextView)findViewById(R.id.textView3);
+        final TextView textView = (TextView) findViewById(R.id.textView);
+        final TextView textArea = (TextView) findViewById(R.id.textView3);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -38,19 +39,19 @@ public class MainActivity extends Activity implements GoogleApiClient.OnConnecti
             }
         });
 
-        final TextView textView1=(TextView)findViewById(R.id.textView2);
+        final TextView textView1 = (TextView) findViewById(R.id.textView2);
         Button button1 = (Button) findViewById(R.id.button2);
         button1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 TimeUtil util = TimeUtil.getInstance();
                 textView1.setText(util.getValidTime().toString());
-                if (googleApiClient.isConnected()){
+                if (googleApiClient.isConnected()) {
                     try {
-                        Location location=LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
-                        textArea.append("Time "+util.getValidTime().toString()+"Latitude "+Double.toString(location.getLatitude())+
-                                " Longitude "+Double.toString(location.getLongitude())+"/n");
-                    }catch (SecurityException e){
+                        Location location = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
+                        textArea.append("Time " + util.getValidTime().toString() + "Latitude " + Double.toString(location.getLatitude()) +
+                                " Longitude " + Double.toString(location.getLongitude()) + "/n");
+                    } catch (SecurityException e) {
 
                     }
                 }
@@ -63,23 +64,26 @@ public class MainActivity extends Activity implements GoogleApiClient.OnConnecti
                     .addApi(LocationServices.API)
                     .build();
         }
-
     }
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
-
+        Log.e("MAIN",Integer.toString(connectionResult.getErrorCode()));
+        closeProgressBar();
+        showMessages(Integer.toString(connectionResult.getErrorCode()));
     }
+
 
     @Override
     public void onConnected(Bundle bundle) {
         try {
-            Location location = LocationServices.FusedLocationApi.getLastLocation(
-                    googleApiClient);
+            closeProgressBar();
+            showMessages("onConnected");
+            Location location = LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
             if (location != null) {
-                Log.e("Location","");
+                Log.e("Location", "");
             }
-        }catch (SecurityException e){
+        } catch (SecurityException e) {
 
         }
 
@@ -98,7 +102,29 @@ public class MainActivity extends Activity implements GoogleApiClient.OnConnecti
 
     @Override
     protected void onStart() {
+        showProgressBar("Sync GPS...");
         googleApiClient.connect();
         super.onStart();
     }
+
+    private void showProgressBar(String title) {
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setIndeterminate(true);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage(title);
+        progressDialog.show();
+    }
+
+    private void closeProgressBar() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+        }
+    }
+
+    private void showMessages(String message) {
+        Toast toast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        toast.setGravity(Gravity.CENTER, 0, 0);
+        toast.show();
+    }
+
 }
